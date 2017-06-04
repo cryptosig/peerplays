@@ -1,7 +1,7 @@
 # This will build the witness_node in a docker image. Make sure you've already
 # checked out the submodules before building.
 
-FROM l3iggs/archlinux:latest
+FROM greyltc/archlinux:latest
 MAINTAINER Nathan Hourt <nathan@followmyvote.com>
 
 RUN pacman -Syu --noconfirm gcc make autoconf automake cmake ninja boost libtool git
