@@ -14,7 +14,7 @@ and then proceed with:
     git clone https://github.com/pbsa/peerplays.git
     cd peerplays
     git submodule update --init --recursive
-    cmake -DCMAKE_BUILD_TYPE=Release .
+    cmake -DBOOST_ROOT="$BOOST_ROOT" -DCMAKE_BUILD_TYPE=Release .
     make
     ./programs/witness_node/witness_node
     
@@ -57,18 +57,16 @@ Use the get_private_key_from_password command
 You will to generate owner and active keys
 
 ```
-get_private_key_from_password the_key_you_received_from_the_faucet your_witness_username active
-get_private_key_from_password the_key_you_received_from_the_faucet your_witness_username owner
+get_private_key_from_password your_witness_username active the_key_you_received_from_the_faucet
 ```
-This will reveal an array for each `['PPYxxx', 'xxxx']`
+This will reveal an array for your active key `["PPYxxx", "xxxx"]`
 
 import_keys into your cli_wallet
 -------------------------------
-- use the second value in each array returned from the previous step for the private key
+- use the second value in the array returned from the previous step for the private key
 - be sure to wrap your username in quotes
-- import all 2 keys received above
+- import the key with this command
 ```
-import_key "your_witness_username" xxxx
 import_key "your_witness_username" xxxx
 ```
 
@@ -95,7 +93,7 @@ Compare this result to
 ```
 dump_private_keys
 ```
-You should see 3 pairs of keys. The last pair should match your block_signing_key and this is the one you will use in the next step!
+You should see 3 pairs of keys. One of the pairs should match your block_signing_key and this is the one you will use in the next step!
 
 Get your witness id
 -----------------
@@ -110,7 +108,7 @@ Comment out the existing private-key before adding yours
 vim witness_node_data_dir/config.ini
 
 witness-id = "1.6.x"
-private-keys = ['block_signing_key','private_key_for_your_block_signing_key']
+private-key = ["block_signing_key","private_key_for_your_block_signing_key"]
 ```
 
 start your witness back up
@@ -150,6 +148,56 @@ Assuming you've received votes, you will start producing as a witness at the nex
 
 ```
 get_witness your_witness_account
+```
+
+systemd
+----------------
+It's important for your witness to start when your system boots up. The filepaths here assume that you installed your witness into `/home/ubuntu/peerplays`
+
+Create a logfile to hold your stdout/err logging
+```bash
+sudo touch /var/log/peerplays.log
+```
+
+Save this file in your peerplays directory. `vi /home/ubuntu/peerplays/start.sh`
+```bash
+#!/bin/bash
+
+cd /home/ubuntu/peerplays
+./programs/witness_node/witness_node &> /var/log/peerplays.log
+```
+Make it executable
+```bash
+chmod 744 /home/ubuntu/peerplays/start.sh
+```
+Create this file: `sudo vi /etc/systemd/system/peerplays.service`
+Note the path for start.sh. Change it to match where your start.sh file is if necessary.
+```
+[Unit]
+Description=Peerplays Witness
+After=network.target
+
+[Service]
+ExecStart=/home/ubuntu/peerplays/start.sh
+
+[Install]
+WantedBy = multi-user.target
+```
+Enable the service
+```bash
+sudo systemctl enable peerplays.service
+```
+Make sure you don't get any errors
+```bash
+sudo systemctl status peerplays.service
+```
+Stop your witness if it is currently running from previous steps, then start it with the service.
+```bash
+sudo systemctl start peerplays.service
+```
+Check your logfile for entries
+```bash
+tail -f /var/log/peerplays.log
 ```
 
 
